@@ -28,7 +28,7 @@ class ProductsMongo {
                 ? `http://localhost:8080/api/products?page=${products.nextPage}`
                 : null
             }
-
+            console.log("hola");
             return {info, results: products.docs};
 
         } catch (error) {
@@ -73,5 +73,14 @@ class ProductsMongo {
         }
     }
 
+async createProduct (obj) {try {
+    const newProduct = await productsModel.create(obj)
+    return newProduct
+} catch (error) {
+    
+}}
 
 }
+
+
+export const productsMongo = new ProductsMongo ()

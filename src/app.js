@@ -1,8 +1,9 @@
-import productRouter from './routes/products.router.js';
-import carritoRouter from './routes/cart.router.js';
+import productRouter from './routers/products.routers.js'
+import "../src/db/dbConfig.js"
+// import carritoRouters from './routers/cart.routers.js';
 
-import realTimeProductsRouter from './routes/realtimeproducts.router.js';
-import homeRouter from './routes/home.router.js';
+// import realTimeProductsRouter from './routers/realtimeproducts.router.js';
+// import homeRouter from './routers/home.router.js';
 
 import express from 'express';
 import { __dirname } from './utils.js';
@@ -23,9 +24,9 @@ app.set('views', __dirname + '/views');
 
 // configuracion de rutas:
 app.use('/api/products', productRouter);
-app.use('/api/carts', carritoRouter);
-app.use('/realtimeproducts', realTimeProductsRouter);
-app.use('/', homeRouter);
+// app.use('/api/carts', carritoRouters);
+// app.use('/realtimeproducts', realTimeProductsRouter);
+// app.use('/', homeRouter);
 
 const PORT = 8080;
 const httpServer = app.listen(PORT, () => {

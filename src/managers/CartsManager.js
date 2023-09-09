@@ -1,131 +1,95 @@
+import { cartModel } from "../../db/models/cart.model.js";
+import { productMongo } from "../product/productManagerMongo.js";
 
-import fs from 'fs';
-import ProductManager from './ProductManager.js';
 
-class CartsManager{
-
-    constructor(pathCarritos, pathProductos) {
-        this.pathCarritos = pathCarritos;
-        this.pathProductos = pathProductos;
-        this.arrayPropiedades = ['id', 'code', 'quantity'];
-
-        this.productManager = new ProductManager(this.pathProductos);
-    }
-
-    async getCarts() {
-        try {
-            if (fs.existsSync(this.pathCarritos)) {
-                const productos = await fs.promises.readFile(this.pathCarritos, 'utf-8');
-                return JSON.parse(productos);
-            } else {
-                return [];
-            }
-
-        } catch (error) {
-            return error;
-        }
-    }
-
-    async getOneCart(id) {
-        try {
-            const carts = await this.getCarts();
-            const cart = carts.find(c => c.id === +id);
-    
-            if (!cart) {
-                return 'Carrito no encontrado';
-            } else {
-                return cart;
-            }
-        } catch (error) {
-            return error;
-        }
-    }
-
-    formateandoProducto (objeto) {
-        let validObject = {};
-
-        for (const propiedad in objeto) {
-            if (this.arrayPropiedades.includes(propiedad)) {
-                validObject[propiedad] = objeto[propiedad];
-            }
-        }
-
-        return validObject;
-    };
-
-    async createCart() {
+class CartMongo {
+    async getCarts(obj){
         try{
-            const carritos = await this.getCarts();
-            const arrayCarrito = [];
-
-            let id;
-            if(carritos.length === 0){
-                id = 1;
-            } else {
-                id = carritos[carritos.length - 1].id + 1;
-            }
-
-            const newCarrito = { id, products: arrayCarrito };
-
-            carritos.push(newCarrito);
-            const carritosString = JSON.stringify(carritos);
-            await fs.promises.writeFile(this.pathCarritos, carritosString);
-
-            return newCarrito;
-
-        } catch (error) {
-            return error;
+            const carts =await cartModel.create(obj)
+            return carts
         }
+        catch(error){return error}
     }
-
-    async addProductToCart (cid, pid) {
-        try{
-            
-            const carritos = await this.getCarts();
-            const carrito = carritos.find(c => c.id === +cid);
-
-            const productos = await this.productManager.getProducts();
-            const producto = productos.find(p => p.id === +pid);
-
-            if(!carrito){
-                return 'Carrito no encontrado';
-            }
-            if(!producto){
-                return 'Producto no encontrado';
-            }
-            if(producto.stock === 0){
-                return 'No hay stock disponible';
-            }
-
-            const productoEnCarrito = carrito.products.find(p => p.id === +pid);
-            
-            const productoFiltrado = this.formateandoProducto(producto);
-
-            if(!productoEnCarrito){
-                productoFiltrado.quantity = 1;
-                carrito.products.push(productoFiltrado);
-            } else {
-                productoEnCarrito.quantity += 1;
-            }
-            
-            fs.promises.writeFile(this.pathCarritos, JSON.stringify(carritos));
-
-            // Resto el stock del producto
-            producto.stock -= 1;
-            if(producto.stock === 0){ 
-                producto.status = false;
-            }
-
-            fs.promises.writeFile(this.pathProductos, JSON.stringify(productos));
-
-            return carrito;
-
-        } catch (error) {
-            return error;
-        }
     
+    async getCartById(id){
+        try{
+            const cart = await cartModel.findById(id)
+            return cart
+        }
+        catch(error){return error}}
+
+
+
+    async updatecart(cid,pid){
+
+        try{
+            const fCart = await cartModel.findById(cid) //busco el carrito
+            if(!fCart || fCart.name =="CastError" ){
+            return "no existe carrito con el Id"}
+            const fProd =await productMongo.getproductById(pid)//busco el prod
+            if(!fProd || fProd.name =="CastError" ){
+            return "no existe producto con el Id"}
+            const prod =fCart.products
+            if(!prod.length){
+                console.log("if")
+                const obj = {prodId:pid,quantity:1}
+                prod.push(obj)
+                await cartModel.updateOne({_id:cid},fCart)
+                return "cart update"
+            }else{
+                const findP= prod.find(e=>e.prodId==pid)
+                if(findP){
+                    findP.quantity =findP.quantity+1
+                    await cartModel.updateOne({_id:cid},fCart)
+                    return "cart update"
+                }else{
+                    const obj = {prodId:pid,quantity:1}
+                prod.push(obj)
+                await cartModel.updateOne({_id:cid},fCart)
+                return "cart update"
+                }
+            }
+    
+        }
+        catch(error){return error}
     }
 
+    async delProdCart (cid,pid){
+        const cartF =await cartModel.findById(cid)
+        const prodInCart = cartF.products
+        const newcart= prodInCart.filter(e=> e.prodId !=pid)
+        cartF.products=newcart
+        await cartModel.findByIdAndUpdate(cid,cartF)
+        return cartF
+    }
+    async delAllprods(cid){
+        const cartF =await cartModel.findById(cid)
+        if(cartF.products.length){
+            cartF.products=[]
+            await cartModel.findByIdAndUpdate(cid,cartF)
+            return "exito"
+        }
+        else{return "no existe carrito"}
+        
+
+    }
+    async putquantity(cid,pid,cant){
+        const {quantity} =cant
+        const cartF =await cartModel.findById(cid)
+        const prodInCart = cartF.products
+        const newQuantity= prodInCart.find(e=>e.prodId== pid)
+        newQuantity.quantity = quantity
+        await cartModel.findByIdAndUpdate(cid,cartF)
+
+    }
+    async putProd(cid,prod){
+        const cartF =await cartModel.findById(cid)
+        const prodInCart = cartF.products
+        cartF.products=prod
+        
+        await cartModel.findByIdAndUpdate(cid,cartF)
+
+    }
 }
 
-export default CartsManager;
+export const cartMongo =new CartMongo()

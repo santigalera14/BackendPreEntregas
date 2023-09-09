@@ -35,11 +35,7 @@ const productsSchema = new mongoose.Schema({
     },
     status: { 
         type: Boolean, 
-        default: this.stock > 0 ? true : false
-    },
-    timestamp: { // para poder ordenar por fecha los productos en la vista
-        type: Date, 
-        default: Date.now 
+        default: true
     },
 });
 
